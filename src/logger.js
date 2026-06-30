@@ -4,6 +4,7 @@ const geoip = require('geoip-lite');
 const { UAParser } = require('ua-parser-js');
 const { insertRequest } = require('./db');
 const { clientIp } = require('./ip');
+const { debug } = require('./debug');
 
 // Jeden parser reużywany dla wszystkich żądań (ścieżka gorąca — bez alokacji per request).
 const uaParser = new UAParser();
@@ -21,7 +22,7 @@ function logRequest(req) {
 
     const url = new URL(req.originalUrl || req.url, 'http://placeholder');
 
-    insertRequest({
+    const info = insertRequest({
       ts: now.toISOString(),
       ts_epoch: now.getTime(),
       method: req.method,
@@ -37,9 +38,11 @@ function logRequest(req) {
       referer: req.headers['referer'] || req.headers['referrer'] || null,
       headers: JSON.stringify(req.headers),
     });
+
+    debug(`zapisano #${info.lastInsertRowid}: ${req.method} ${url.pathname} ip=${ip} kraj=${geo ? geo.country : '-'}`);
   } catch (err) {
-    // Logowanie ruchu nie może wywrócić aplikacji.
-    console.error('[logger] nie udało się zapisać żądania:', err.message);
+    // Logowanie ruchu nie może wywrócić aplikacji. Błąd zapisu pokazujemy zawsze (nie tylko w DEBUG).
+    console.error('[logger] BŁĄD zapisu żądania:', err && err.stack ? err.stack : err);
   }
 }
 

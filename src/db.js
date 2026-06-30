@@ -69,7 +69,11 @@ const selectRecentStmt = db.prepare(`
 `);
 
 function insertRequest(record) {
-  insertStmt.run(record);
+  return insertStmt.run(record);
+}
+
+function countAll() {
+  return db.prepare('SELECT COUNT(*) AS n FROM requests').get().n;
 }
 
 function selectRange(fromEpoch, toEpoch) {
@@ -84,4 +88,4 @@ function countRange(fromEpoch, toEpoch) {
   return countRangeStmt.get({ from: fromEpoch, to: toEpoch }).n;
 }
 
-module.exports = { db, insertRequest, selectRange, selectRecent, countRange, DB_PATH };
+module.exports = { db, insertRequest, selectRange, selectRecent, countRange, countAll, DB_PATH };
