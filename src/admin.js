@@ -122,10 +122,20 @@ const PANEL_HTML = `<!doctype html>
     $('to').value = toLocalInput(now);
     $('from').value = toLocalInput(new Date(now.getTime() - 60 * 60 * 1000));
 
+    // <input datetime-local> daje czas lokalny bez strefy. Konwertujemy go na jednoznaczny
+    // UTC ISO (new Date interpretuje wartość w strefie przeglądarki), żeby serwer — który może
+    // działać w innej strefie (np. UTC na sandboxie) — filtrował dokładnie ten sam moment.
+    function toInstant(localValue) {
+      const t = new Date(localValue);
+      return Number.isNaN(t.getTime()) ? '' : t.toISOString();
+    }
+
     function queryString() {
       const p = new URLSearchParams();
-      if ($('from').value) p.set('from', $('from').value);
-      if ($('to').value) p.set('to', $('to').value);
+      const from = toInstant($('from').value);
+      const to = toInstant($('to').value);
+      if (from) p.set('from', from);
+      if (to) p.set('to', to);
       return p.toString();
     }
 
