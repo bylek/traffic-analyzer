@@ -49,6 +49,25 @@ const selectRangeStmt = db.prepare(`
   ORDER BY ts_epoch ASC
 `);
 
+// Liczba rekordów w zakresie (bez ładowania danych).
+const countRangeStmt = db.prepare(`
+  SELECT COUNT(*) AS n
+  FROM requests
+  WHERE ts_epoch >= COALESCE(@from, ts_epoch)
+    AND ts_epoch <= COALESCE(@to, ts_epoch)
+`);
+
+// Podgląd: najnowsze rekordy z zakresu, ograniczone limitem.
+const selectRecentStmt = db.prepare(`
+  SELECT id, ts, ts_epoch, method, path, query, host, client_ip, country,
+         user_agent, browser, os, device, referer, headers
+  FROM requests
+  WHERE ts_epoch >= COALESCE(@from, ts_epoch)
+    AND ts_epoch <= COALESCE(@to, ts_epoch)
+  ORDER BY ts_epoch DESC
+  LIMIT @limit
+`);
+
 function insertRequest(record) {
   insertStmt.run(record);
 }
@@ -57,4 +76,12 @@ function selectRange(fromEpoch, toEpoch) {
   return selectRangeStmt.all({ from: fromEpoch, to: toEpoch });
 }
 
-module.exports = { db, insertRequest, selectRange, DB_PATH };
+function selectRecent(fromEpoch, toEpoch, limit) {
+  return selectRecentStmt.all({ from: fromEpoch, to: toEpoch, limit });
+}
+
+function countRange(fromEpoch, toEpoch) {
+  return countRangeStmt.get({ from: fromEpoch, to: toEpoch }).n;
+}
+
+module.exports = { db, insertRequest, selectRange, selectRecent, countRange, DB_PATH };
